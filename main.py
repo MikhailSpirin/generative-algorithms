@@ -1,76 +1,75 @@
 import math
 import random
 import logging
-from shapely.geometry import Point, LineString
-from shapely import affinity
+from shapely.geometry import Point, LineString, LinearRing
+from shapely import affinity, union
 from PIL import Image, ImageDraw
 from palettes import PALETTES
-
-c = 1.3
-N = 1000
-R0 = 300
-XMAX = 2000
-YMAX = 1500
-MAX_TRIES = 100
+from codetimer import CodeTimer
+from primitive import Primitive
+import time
 
 
-def get_all_shapes_params(c, N, R0):
-    rv = {}
-    A0 = R0 * R0 * math.pi
-    for i in range(1, N + 1):
-        o = {}
-        o['gi'] = 1 / i ** c
-        o['area'] = A0 * o['gi']
-        o['radius'] = math.sqrt(o['area'] / math.pi)
-        rv[i] = o
+c = 1.4
+n = 1500
+a0 = 370*370
+XMAX = 1200
+YMAX = 800
+MAX_TRIES = 20
+
+
+def init_all_primitives(c, n, a0):
+    rv = [Primitive(a0 * 1 / i ** c) for i in range(1, n + 1)]
+    # rv = [Primitive(random.choice([a0, a0*4, a0*9, a0*3])) for i in range(1, n + 1)]
     return rv
 
 
 def get_placement_coords(x_max, y_max):
-    return random.random() * x_max, random.random() * y_max // 100 * 100
+    return (
+        random.random() * x_max // 10 * 10,
+        random.random() * y_max // 10 * 10
+    )
 
 
-def overlaps(trial, border, placed):
-    if not trial.intersection(border).is_empty or not trial.intersection(placed).is_empty:
-        return True
-    return False
-
-
-def draw_object(draw, x, y, r, palette):
-    draw.ellipse((x - r, y - r, x + r, y + r), fill=random.choice(palette), outline=None, width=1)
-
-
-def init_canvas():
+def init_graph():
     im = Image.new('RGB', (XMAX, YMAX), (0, 0, 0))
     draw = ImageDraw.Draw(im)
-    return im, draw
+    palette = random.choice(list(PALETTES.values()))
+    return im, draw, palette
 
 
 def create_border():
-    return LineString([[0, 0], [XMAX, 0], [XMAX, YMAX], [0, YMAX], [0, 1]])
+    return LinearRing([[0, 0], [XMAX, 0], [XMAX, YMAX], [0, YMAX], [0, 0]])
 
 
 if __name__ == '__main__':
+    start_time = time.time()
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
 
-    objects_to_place = get_all_shapes_params(c, N, R0)
-    image, draw = init_canvas()
-    current_palette = random.choice(list(PALETTES.values()))
+    primitives = init_all_primitives(c, n, a0)
+    image, draw, palette = init_graph()
     border = create_border()
+
+    placed_objects = Point(0, 0)
+
     tries_logger = []
-    placed_objects_union = Point(0, 0)
-    for i in range(1, N + 1):
+    for idx, item in enumerate(primitives):
         tries = 0
         while tries < MAX_TRIES:
-            x, y = get_placement_coords(XMAX, YMAX)
-            radius = objects_to_place[i]['radius']
-            trial = Point(x, y).buffer(radius)
-            if not overlaps(trial, border, placed_objects_union):
-                draw_object(draw, x, y, radius, current_palette)
-                placed_objects_union = placed_objects_union.union(trial)
-                break
             tries += 1
-        logger.info(f"placed {i}. Previous tries {tries}")
+            x, y = get_placement_coords(XMAX, YMAX)
+            item.define_object(x, y)
+
+            if not item.overlaps(placed_objects) and not item.touches_border(border):
+                item.draw_object(draw, palette)
+                with CodeTimer("union"):
+                    placed_objects = union(placed_objects, item.get_primitive())
+                break
+
+        logger.info(f"placed {idx}. Previous tries {tries}")
+
     image.show()
+    logger.info("--- %s seconds ---" % (time.time() - start_time))
+    logger.info(len(placed_objects.geoms))
