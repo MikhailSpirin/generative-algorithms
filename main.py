@@ -11,8 +11,8 @@ import time
 
 
 c = 1.4
-n = 1500
-a0 = 370*370
+n = 1200
+a0 = 100000
 XMAX = 1200
 YMAX = 800
 MAX_TRIES = 20

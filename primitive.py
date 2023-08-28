@@ -8,8 +8,8 @@ class Primitive:
         self.area = area
         self.x = 0
         self.y = 0
-        # self.radius = 0
-        self.size = 0
+        self.radius = 0
+        # self.size = 0
         self.primitive = None
 
     def get_primitive(self):
@@ -26,21 +26,27 @@ class Primitive:
     def define_object(self, x, y):
         self.x = x
         self.y = y
-        self.size = math.sqrt(self.area)
-        self.primitive = Polygon([(self.x, self.y),
-                                     (self.x + self.size, self.y),
-                                     (self.x + self.size, self.y + self.size),
-                                     (self.x, self.y + self.size),
-                                     (self.x, self.y)]).buffer(2)
+        # self.size = math.sqrt(self.area)
+        # self.primitive = Polygon([(self.x, self.y),
+        #                              (self.x + self.size, self.y),
+        #                              (self.x + self.size, self.y + self.size),
+        #                              (self.x, self.y + self.size),
+        #                              (self.x, self.y)]).buffer(2)
 
-        # self.radius = math.sqrt(self.area / math.pi)
-        # self.primitive = Point(self.x, self.y).buffer(self.radius)
+        self.radius = math.sqrt(self.area / math.pi)
+        self.primitive = Point(self.x, self.y).buffer(self.radius+1)
         return self.primitive
 
     def draw_object(self, draw, palette):
-        # draw.ellipse((self.x - self.radius,
-        #               self.y - self.radius,
-        #               self.x + self.radius,
-        #               self.y + self.radius), fill=random.choice(palette), outline=None, width=1)
+        draw.ellipse((self.x - self.radius,
+                      self.y - self.radius,
+                      self.x + self.radius,
+                      self.y + self.radius),
+                      fill=random.choice(palette),
+                      outline=None,
+                      width=1)
 
-        draw.rounded_rectangle((self.x, self.y, self.x + self.size, self.y + self.size), radius=self.size/5, fill=random.choice(palette), outline=None)
+        # draw.rounded_rectangle((self.x, self.y, self.x + self.size, self.y + self.size),
+        #                        radius=self.size/5,
+        #                        fill=random.choice(palette),
+        #                        outline=None)
