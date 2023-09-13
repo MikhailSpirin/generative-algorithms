@@ -2,7 +2,7 @@ import timeit
 
 class CodeTimer:
     def __init__(self, name=None):
-        self.name = " '"  + name + "'" if name else ''
+        self.name = " '" + name + "'" if name else ''
 
     def __enter__(self):
         self.start = timeit.default_timer()
